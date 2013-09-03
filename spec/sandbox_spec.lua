@@ -33,6 +33,11 @@ describe('sandbox', function()
     assert.equal('hellohello', string.rep('hello', 2))
   end)
 
+  it('restores string.rep even if there is an error', function()
+    assert.has_error(function() sandbox("error('foo')") end)
+    assert.equal('hellohello', string.rep('hello', 2))
+  end)
+
 
 
 end)

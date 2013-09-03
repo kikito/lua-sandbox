@@ -54,9 +54,11 @@ local function run(f, options)
   string.rep = nil
 
   setfenv(f, BASE_ENV)
-  local result = f()
+  local ok, result = pcall(f)
 
   string.rep = string_rep
+
+  if not ok then error(result) end
 
   return result
 end
