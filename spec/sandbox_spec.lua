@@ -22,6 +22,7 @@ describe('sandbox', function()
   it('does not allow access to not-safe stuff', function()
     assert.has_error(function() sandbox('return setmetatable({}, {})') end)
     assert.has_error(function() sandbox('return string.rep("hello", 5)') end)
+    assert.has_error(function() sandbox('return _G.string.upper("hello")') end)
   end)
 
   it('does not allow pesky string:rep', function()
@@ -55,11 +56,21 @@ describe('sandbox', function()
       assert.equal('hellohello', string.rep('hello', 2))
     end)
 
-    it('#focus accepts a limit param', function()
+    it('accepts a quota param', function()
       assert.no_has_error(function() sandbox("for i=1,100 do end") end)
-      assert.has_error(function() sandbox("for i=1,100 do end", {limit = 50}) end)
+      assert.has_error(function() sandbox("for i=1,100 do end", {quota = 50}) end)
     end)
 
+  end)
+
+  describe('when given an env', function()
+    it('is available on the sandboxed env', function()
+      assert.equal(1, sandbox("return foo", {env = {foo = 1}}))
+    end)
+
+    it('does not hide previous env', function()
+      assert.equal('HELLO', sandbox("return string.upper(foo)", {env = {foo = 'hello'}}))
+    end)
   end)
 
 

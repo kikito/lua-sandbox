@@ -47,14 +47,25 @@ end)
 
 local string_rep = string.rep
 
-local function copy(other)
+local copy -- defined below
+
+local function merge(destination, other)
   if type(other) ~= 'table' then return other end
-  local c = {}
   for k,v in pairs(other) do
-    c[copy(k)] = copy(v)
+    destination[copy(k)] = copy(v)
   end
+  return destination
+end
+
+-- declared above
+copy = function(other)
+  if type(other) ~= 'table' then return other end
+  local c = merge({}, other)
+  local mt = getmetatable(other)
+  if mt then setmetatable(c, copy(mt)) end
   return c
 end
+
 
 local function cleanup()
   debug.sethook()
@@ -66,11 +77,12 @@ local function run(f, options)
 
   options = options or {}
 
-  local limit = options.limit or 500000
+  local quota = options.quota or 500000
+  local env   = options.env   or {}
 
-  local env = copy(BASE_ENV)
+  local sandboxed_env = merge(copy(BASE_ENV), env)
 
-  setfenv(f, env)
+  setfenv(f, sandboxed_env)
 
   -- I would love to be able to make step greater than 1
   -- (say, 500000) but any value > 1 seems to choke with a simple while true do end
@@ -80,9 +92,9 @@ local function run(f, options)
   local instructions_count = 0
   local timeout = function(str)
     instructions_count = instructions_count + 1
-    if instructions_count >= limit then
+    if instructions_count >= quota then
       cleanup()
-      error('Quota exceeded: ' .. tostring(instructions_count) .. '/' .. tostring(limit) .. ' instructions')
+      error('Quota exceeded: ' .. tostring(instructions_count) .. '/' .. tostring(quota) .. ' instructions')
     end
   end
   debug.sethook(timeout, "", step)
@@ -91,8 +103,8 @@ local function run(f, options)
   local ok, result = pcall(f)
 
   cleanup()
-  if not ok then error(result) end
 
+  if not ok then error(result) end
   return result
 end
 
