@@ -38,6 +38,10 @@ describe('sandbox', function()
     assert.equal('hellohello', string.rep('hello', 2))
   end)
 
+  it('#focus throws an error with infinite loops', function()
+    assert.has_error(function() sandbox("while true do end") end)
+  end)
+
 
 
 end)

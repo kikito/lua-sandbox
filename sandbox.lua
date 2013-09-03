@@ -48,15 +48,36 @@ end)
 
 local string_rep = string.rep
 
+local function cleanup()
+  debug.sethook()
+  string.rep = string_rep
+end
+
 local function run(f, options)
   if type(f) == 'string' then f = loadstring(f) end
 
+  setfenv(f, BASE_ENV)
+
+  -- I would love to be able to make step greater than 1
+  -- (say, 500000) but any value > 1 seems to choke with a simple while true do end
+  -- After ~100 iterations, they stop calling timeout. So I need to use step = 1 and
+  -- count the steps separatedly
+  local step = 1
+  local count = 0
+  local timeout = function(str)
+    count = count + step
+    if count >= 500000 then
+      cleanup()
+      error('Timeout')
+    end
+  end
+  debug.sethook(timeout, "", step)
+
   string.rep = nil
 
-  setfenv(f, BASE_ENV)
   local ok, result = pcall(f)
 
-  string.rep = string_rep
+  cleanup()
 
   if not ok then error(result) end
 
