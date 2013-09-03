@@ -54,7 +54,11 @@ local function cleanup()
 end
 
 local function run(f, options)
-  if type(f) == 'string' then f = loadstring(f) end
+  if type(f) == 'string' then f = assert(loadstring(f)) end
+
+  options = options or {}
+
+  local limit = options.limit or 500000
 
   setfenv(f, BASE_ENV)
 
@@ -65,8 +69,8 @@ local function run(f, options)
   local step = 1
   local count = 0
   local timeout = function(str)
-    count = count + step
-    if count >= 500000 then
+    count = count + 1
+    if count >= limit then
       cleanup()
       error('Timeout')
     end
@@ -87,4 +91,4 @@ end
 local sandbox = { run = run }
 
 
-return setmetatable(sandbox, {__call = function(_,f) return run(f) end})
+return setmetatable(sandbox, {__call = function(_,f,o) return run(f,o) end})

@@ -38,10 +38,16 @@ describe('sandbox', function()
     assert.equal('hellohello', string.rep('hello', 2))
   end)
 
-  it('#focus throws an error with infinite loops', function()
-    assert.has_error(function() sandbox("while true do end") end)
+
+  describe('when handling infinite loops', function()
+    it('throws an error with infinite loops', function()
+      assert.has_error(function() sandbox("while true do end") end)
+    end)
+
+    it('#focus accepts a limit param', function()
+      --assert.no_has_error(function() sandbox("for i=1,10000 do end") end)
+      assert.has_error(function() sandbox("for i=1,10000 do end", {limit = 50}) end)
+    end)
   end)
-
-
 
 end)
