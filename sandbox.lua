@@ -76,19 +76,14 @@ local function run(f, options)
     end
   end
   debug.sethook(timeout, "", step)
-
   string.rep = nil
 
   local ok, result = pcall(f)
 
   cleanup()
-
   if not ok then error(result) end
 
   return result
 end
 
-local sandbox = { run = run }
-
-
-return setmetatable(sandbox, {__call = function(_,f,o) return run(f,o) end})
+return setmetatable({run = run}, {__call = function(_,f,o) return run(f,o) end})
