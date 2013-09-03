@@ -38,6 +38,11 @@ describe('sandbox', function()
     assert.equal('hellohello', string.rep('hello', 2))
   end)
 
+  it('should not persist modifying the packages', function()
+    sandbox("string.foo = 1")
+    assert.is_nil(sandbox("return string.foo"))
+  end)
+
 
   describe('when handling infinite loops', function()
 
@@ -54,6 +59,9 @@ describe('sandbox', function()
       assert.no_has_error(function() sandbox("for i=1,100 do end") end)
       assert.has_error(function() sandbox("for i=1,100 do end", {limit = 50}) end)
     end)
+
   end)
+
+
 
 end)

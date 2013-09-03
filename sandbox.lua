@@ -1,5 +1,4 @@
 local BASE_ENV = {}
-
 -- Non-safe :
 -- string.rep: can be used to allocate millions of bytes in 1 operation
 -- {set|get}metatable: can be used to modify the metatable of global objects (strings, integers)
@@ -48,6 +47,15 @@ end)
 
 local string_rep = string.rep
 
+local function copy(other)
+  if type(other) ~= 'table' then return other end
+  local c = {}
+  for k,v in pairs(other) do
+    c[copy(k)] = copy(v)
+  end
+  return c
+end
+
 local function cleanup()
   debug.sethook()
   string.rep = string_rep
@@ -60,7 +68,9 @@ local function run(f, options)
 
   local limit = options.limit or 500000
 
-  setfenv(f, BASE_ENV)
+  local env = copy(BASE_ENV)
+
+  setfenv(f, env)
 
   -- I would love to be able to make step greater than 1
   -- (say, 500000) but any value > 1 seems to choke with a simple while true do end
