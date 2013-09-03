@@ -67,9 +67,10 @@ copy = function(other)
 end
 
 
-local function cleanup()
+local function cleanup(sandboxed_env, refs)
   debug.sethook()
   string.rep = string_rep
+  for k,_ in pairs(refs) do refs[k] = sandboxed_env[k] end
 end
 
 local function run(f, options)
@@ -79,8 +80,10 @@ local function run(f, options)
 
   local quota = options.quota or 500000
   local env   = options.env   or {}
+  local refs  = options.refs  or {}
 
   local sandboxed_env = merge(copy(BASE_ENV), env)
+  for k,v in pairs(refs) do sandboxed_env[k] = v end
 
   setfenv(f, sandboxed_env)
 
@@ -93,7 +96,7 @@ local function run(f, options)
   local timeout = function(str)
     instructions_count = instructions_count + 1
     if instructions_count >= quota then
-      cleanup()
+      cleanup(sandboxed_env, refs)
       error('Quota exceeded: ' .. tostring(instructions_count) .. '/' .. tostring(quota) .. ' instructions')
     end
   end
@@ -102,7 +105,7 @@ local function run(f, options)
 
   local ok, result = pcall(f)
 
-  cleanup()
+  cleanup(sandboxed_env, refs)
 
   if not ok then error(result) end
   return result

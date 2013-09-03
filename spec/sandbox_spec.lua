@@ -58,19 +58,49 @@ describe('sandbox', function()
 
     it('accepts a quota param', function()
       assert.no_has_error(function() sandbox("for i=1,100 do end") end)
-      assert.has_error(function() sandbox("for i=1,100 do end", {quota = 50}) end)
+      assert.has_error(function() sandbox("for i=1,100 do end", {quota = 20}) end)
     end)
 
   end)
 
-  describe('when given an env', function()
+  describe('when given an env option', function()
     it('is available on the sandboxed env', function()
       assert.equal(1, sandbox("return foo", {env = {foo = 1}}))
     end)
 
-    it('does not hide previous env', function()
+    it('does not hide base env', function()
       assert.equal('HELLO', sandbox("return string.upper(foo)", {env = {foo = 'hello'}}))
     end)
+
+    it('can not modify the env', function()
+      local env = {foo = 1}
+      sandbox("foo = 2", {env = env})
+      assert.equal(env.foo, 1)
+    end)
+  end)
+
+  describe('when given a refs option', function()
+    it('is available on the sandboxed env', function()
+      assert.equal(1, sandbox("return foo", {refs = {foo = 1}}))
+    end)
+
+    it('does not hide base env', function()
+      assert.equal('HELLO', sandbox("return string.upper(foo)", {refs = {foo = 'hello'}}))
+    end)
+
+    it('can modify the refs', function()
+      local refs = {foo = 1}
+      sandbox("foo = 2", {refs = refs})
+      assert.equal(refs.foo, 2)
+    end)
+
+    it('can modify the ref tables keys', function()
+      local refs = {items = {quantity = 1}}
+      sandbox("items.quantity = 2", {refs = refs})
+      assert.equal(refs.items.quantity, 2)
+    end)
+
+
   end)
 
 

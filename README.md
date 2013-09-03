@@ -34,6 +34,17 @@ Usage
     -- It is also possible to use the env option to add additional variables to the environment
     sandbox('return foo', {env = {foo = 'This was on the environment'}})
 
+    -- The variables defined on the env are deep-copied and changes on them will not be persisted
+    local env = {foo = "can't touch this"}
+    sandbox('foo = "bar"', {env = env})
+    assert(env.foo = "can't touch this")
+
+    -- If you want to modify variables from inside the sandbox, use the refs option:
+    local refs = {foo = "kindof insecure"}
+    sandbox('foo = "changed"', {refs = refs})
+    assert(refs.foo = "changed")
+
+
 Installation
 ============
 
