@@ -65,14 +65,14 @@ local function run(f, options)
   -- I would love to be able to make step greater than 1
   -- (say, 500000) but any value > 1 seems to choke with a simple while true do end
   -- After ~100 iterations, they stop calling timeout. So I need to use step = 1 and
-  -- count the steps separatedly
+  -- instructions_count the steps separatedly
   local step = 1
-  local count = 0
+  local instructions_count = 0
   local timeout = function(str)
-    count = count + 1
-    if count >= limit then
+    instructions_count = instructions_count + 1
+    if instructions_count >= limit then
       cleanup()
-      error('Timeout')
+      error('Quota exceeded: ' .. tostring(instructions_count) .. '/' .. tostring(limit) .. ' instructions')
     end
   end
   debug.sethook(timeout, "", step)
