@@ -10,39 +10,52 @@ Usage
 
     local sandbox = require 'sandbox'
 
-    -- sandbox can handle both strings and functions
-    local msg  = sandbox(function() return 'this is untrusted code' end)
-    local msg2 = sandbox("return 'this is also untrusted code'")
+`sandbox(f, options)` and `sandbox.protect(f, options)` are synonyms. They return a sandboxed version of `f`.
+`options` is not required. So far the only possible options are `env` and `quota` (see below)
 
-    sandbox(function()
-      -- see sandbox.lua for a list of safe and unsafe operations
-      return ('I can use safe operations, like string.upper'):upper()
+    local sandboxed_f = sandbox(function() return 'hey' end)
+    local msg = sandboxed_f() -- msg is now 'hey'
+
+`sandbox.run(f)` sanboxes a function and executes it. f can be either a string or a function
+
+    local msg  = sandbox.run(function() return 'this is untrusted code' end)
+    local msg2 = sandbox.run("return 'this is also untrusted code'")
+
+Only safe modules and operations can be accessed from the sandboxed mode. See the source code for a list of safe/unsafe operations.
+
+    sandbox.run(function()
+      return string.upper('string.upper is a safe operation.')
     end)
 
-    -- Attempting to invoke unsafe operations (such as os.execute) is not possible
-    sandbox(function()
+Attempting to invoke unsafe operations (such as `os.execute`) is not permitted
+
+    sandbox.run(function()
       os.execute('rm -rf /') -- this will throw an error, no damage don
     end)
 
-    -- It is not possible to exhaust the machine with infinite loops; the following
-    -- will throw an error after invoking 500000 instructions:
-    sandbox('while true do end')
+It is not possible to exhaust the machine with infinite loops; the following will throw an error after invoking 500000 instructions:
 
-    -- The amount of instructions executed can be tweaked via the quota option
-    sandbox('while true do end', {quota=10000}) -- throw error after 10000 instructions
+    sandbox.run('while true do end')
 
-    -- It is also possible to use the env option to add additional variables to the environment
-    sandbox('return foo', {env = {foo = 'This was on the environment'}})
+The amount of instructions executed can be tweaked via the `quota` option (default value: 500000 instructions)
 
-    -- The variables defined on the env are deep-copied and changes on them will not be persisted
-    local env = {foo = "can't touch this"}
-    sandbox('foo = "bar"', {env = env})
-    assert(env.foo = "can't touch this")
+    sandbox.run('while true do end', {quota=10000}) -- throw error after 10000 instructions
 
-    -- If you want to modify variables from inside the sandbox, use the refs option:
-    local refs = {foo = "kindof insecure"}
-    sandbox('foo = "changed"', {refs = refs})
-    assert(refs.foo = "changed")
+It is also possible to use the env option to add additional variables to the environment
+
+    sandbox.run('return foo', {env = {foo = 'This was on the environment'}})
+
+If provided, the env variable will be heavily modified by the sanbox (adding base modules like string)
+The sandboxed code can also modify the env
+
+    local env = {amount = 1}
+    sandbox.run('amount = amount + 1', {env = env})
+    assert(env.amount = 2)
+
+Finally, you may pass parameters to the sandboxed function directly in `sandbox.run`. Just add them after the `options` param.
+
+    local secret = sandbox.run(function(a,b) return a + b, {}, 1, 2)
+    assert(secret == 3)
 
 
 Installation

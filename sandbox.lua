@@ -7,7 +7,7 @@ local BASE_ENV = {}
 -- _G: Unsafe. It can be mocked though
 -- load{file|string}: All unsafe because they can grant acces to global env
 -- raw{get|set|equal}: Potentially unsafe
--- module|require|package: Can modify the host settings
+-- module|require|module: Can modify the host settings
 -- string.dump: Can display confidential server info (implementation of functions)
 -- string.rep: Can allocate millions of bytes in one go
 -- math.randomseed: Can affect the host sytem
@@ -36,79 +36,81 @@ string.sub  string.upper
 table.insert table.maxn table.remove table.sort
 
 ]]):gsub('%S+', function(id)
-  local package, method = id:match('([^%.]+)%.([^%.]+)')
-  if package then
-    BASE_ENV[package]         = BASE_ENV[package] or {}
-    BASE_ENV[package][method] = _G[package][method]
+  local module, method = id:match('([^%.]+)%.([^%.]+)')
+  if module then
+    BASE_ENV[module]         = BASE_ENV[module] or {}
+    BASE_ENV[module][method] = _G[module][method]
   else
     BASE_ENV[id] = _G[id]
   end
 end)
 
+local function protect_module(module, module_name)
+  return setmetatable({}, {
+    __index = module,
+    __newindex = function(_, attr_name, _)
+      error('Can not modify ' .. module_name .. '.' .. attr_name .. '. Protected by the sandbox.')
+    end
+  })
+end
+
+('coroutine math os string table'):gsub('%S+', function(module_name)
+  BASE_ENV[module_name] = protect_module(BASE_ENV[module_name], module_name)
+end)
+
+
 local string_rep = string.rep
 
-local copy -- defined below
-
-local function merge(destination, other)
-  if type(other) ~= 'table' then return other end
-  for k,v in pairs(other) do
-    destination[copy(k)] = copy(v)
+local function merge(dest, source)
+  for k,v in pairs(source) do
+    dest[k] = dest[k] or v
   end
-  return destination
+  return dest
 end
 
--- declared above
-copy = function(other)
-  if type(other) ~= 'table' then return other end
-  local c = merge({}, other)
-  local mt = getmetatable(other)
-  if mt then setmetatable(c, copy(mt)) end
-  return c
-end
-
-
-local function cleanup(sandboxed_env, refs)
+local function cleanup()
   debug.sethook()
   string.rep = string_rep
-  for k,_ in pairs(refs) do refs[k] = sandboxed_env[k] end
 end
 
-local function run(f, options)
-  if type(f) == 'string' then f = assert(loadstring(f)) end
+local function protect(f, options)
+  return function(...)
+    if type(f) == 'string' then f = assert(loadstring(f)) end
 
-  options = options or {}
+    options = options or {}
 
-  local quota = options.quota or 500000
-  local env   = options.env   or {}
-  local refs  = options.refs  or {}
+    local quota = options.quota or 500000
+    local env   = merge(options.env or {}, BASE_ENV)
 
-  local sandboxed_env = merge(copy(BASE_ENV), env)
-  for k,v in pairs(refs) do sandboxed_env[k] = v end
+    setfenv(f, env)
 
-  setfenv(f, sandboxed_env)
-
-  -- I would love to be able to make step greater than 1
-  -- (say, 500000) but any value > 1 seems to choke with a simple while true do end
-  -- After ~100 iterations, they stop calling timeout. So I need to use step = 1 and
-  -- instructions_count the steps separatedly
-  local step = 1
-  local instructions_count = 0
-  local timeout = function(str)
-    instructions_count = instructions_count + 1
-    if instructions_count >= quota then
-      cleanup(sandboxed_env, refs)
-      error('Quota exceeded: ' .. tostring(instructions_count) .. '/' .. tostring(quota) .. ' instructions')
+    -- I would love to be able to make step greater than 1
+    -- (say, 500000) but any value > 1 seems to choke with a simple while true do end
+    -- After ~100 iterations, they stop calling timeout. So I need to use step = 1 and
+    -- instructions_count the steps separatedly
+    local step = 1
+    local instructions_count = 0
+    local timeout = function(str)
+      instructions_count = instructions_count + 1
+      if instructions_count >= quota then
+        cleanup()
+        error('Quota exceeded: ' .. tostring(instructions_count) .. '/' .. tostring(quota) .. ' instructions')
+      end
     end
+    debug.sethook(timeout, "", step)
+    string.rep = nil
+
+    local ok, result = pcall(f, ...)
+
+    cleanup()
+
+    if not ok then error(result) end
+    return result
   end
-  debug.sethook(timeout, "", step)
-  string.rep = nil
-
-  local ok, result = pcall(f)
-
-  cleanup(sandboxed_env, refs)
-
-  if not ok then error(result) end
-  return result
 end
 
-return setmetatable({run = run}, {__call = function(_,f,o) return run(f,o) end})
+local function run(f, options, ...)
+  return protect(f, options)(...)
+end
+
+return setmetatable({protect = protect, run = run}, {__call = function(_,f,o) return protect(f,o) end})
