@@ -1,17 +1,17 @@
 local BASE_ENV = {}
 -- Non-safe :
--- string.rep: can be used to allocate millions of bytes in 1 operation
--- {set|get}metatable: can be used to modify the metatable of global objects (strings, integers)
--- collectgarbage: can affect performance of other systems
--- dofile: can access the server filesystem
--- _G: Unsafe. It can be mocked though
--- load{file|string}: All unsafe because they can grant acces to global env
--- raw{get|set|equal}: Potentially unsafe
--- module|require|module: Can modify the host settings
--- string.dump: Can display confidential server info (implementation of functions)
--- string.rep: Can allocate millions of bytes in one go
--- math.randomseed: Can affect the host sytem
--- io.*, os.*: Most stuff there is non-save
+-- * string.rep: can be used to allocate millions of bytes in 1 operation
+-- * {set|get}metatable: can be used to modify the metatable of global objects (strings, integers)
+-- * collectgarbage: can affect performance of other systems
+-- * dofile: can access the server filesystem
+-- * _G: Unsafe. It can be mocked though
+-- * load{file|string}: All unsafe because they can grant acces to global env
+-- * raw{get|set|equal}: Potentially unsafe
+-- * module|require|module: Can modify the host settings
+-- * string.dump: Can display confidential server info (implementation of functions)
+-- * string.rep: Can allocate millions of bytes in one go
+-- * math.randomseed: Can affect the host sytem
+-- * io.*, os.*: Most stuff there is non-save
 
 ([[
 
@@ -74,30 +74,22 @@ local function cleanup()
 end
 
 local function protect(f, options)
+  if type(f) == 'string' then f = assert(loadstring(f)) end
+
+  options = options or {}
+
+  local quota = options.quota or 500000
+  local env   = merge(options.env or {}, BASE_ENV)
+
+  setfenv(f, env)
+
   return function(...)
-    if type(f) == 'string' then f = assert(loadstring(f)) end
-
-    options = options or {}
-
-    local quota = options.quota or 500000
-    local env   = merge(options.env or {}, BASE_ENV)
-
-    setfenv(f, env)
-
-    -- I would love to be able to make step greater than 1
-    -- (say, 500000) but any value > 1 seems to choke with a simple while true do end
-    -- After ~100 iterations, they stop calling timeout. So I need to use step = 1 and
-    -- instructions_count the steps separatedly
-    local step = 1
-    local instructions_count = 0
-    local timeout = function(str)
-      instructions_count = instructions_count + 1
-      if instructions_count >= quota then
-        cleanup()
-        error('Quota exceeded: ' .. tostring(instructions_count) .. '/' .. tostring(quota) .. ' instructions')
-      end
+    local timeout = function()
+      cleanup()
+      error('Quota exceeded: ' .. tostring(quota))
     end
-    debug.sethook(timeout, "", step)
+
+    debug.sethook(timeout, "", quota)
     string.rep = nil
 
     local ok, result = pcall(f, ...)

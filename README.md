@@ -71,12 +71,9 @@ This library is released under the MIT license. See MIT-LICENSE.txt for details
 Specs
 =====
 
-This project uses [busted](http://olivinelabs.com/busted/) for its specs. In order to run them, install `busted` and then:
+This project uses [telescope](https://github.com/norman/telescope) for its specs. In order to run them, install it and then:
 
     cd /path/to/where/the/spec/folder/is
-    busted
+    tsc spec/*
 
-
-
-
-
+I would love to use [busted](http://olivinelabs.com/busted/), but it has some incompatibility with `debug.sethook(f, "", quota)` and the tests just hanged up.
