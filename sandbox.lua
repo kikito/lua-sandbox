@@ -1,9 +1,10 @@
 local sandbox = {
   _VERSION      = "sandbox 0.5",
   _DESCRIPTION  = "A pure-lua solution for running untrusted Lua code.",
-  _COPYRIGHT    = "Copyright (c) 2013 Enrique García Cota",
   _LICENSE      = [[
     MIT LICENSE
+
+    Copyright (c) 2013 Enrique García Cota
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the
