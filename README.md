@@ -10,8 +10,7 @@ Usage
 
     local sandbox = require 'sandbox'
 
-`sf = sandbox(f, options)` and `sf = sandbox.protect(f, options)`
------------------------------------------------------------------
+#### `sf = sandbox(f, options)` and `sf = sandbox.protect(f, options)`
 
 Those two are synonyms. They return a sandboxed version of `f`.
 
@@ -33,7 +32,7 @@ Only safe modules and operations can be accessed from a sandboxed function. See 
     f1() -- ok
     f2() -- error: os.execute not found
 
-### `options.quota (default 500000)`
+##### `options.quota`
 
 It is not possible to exhaust the machine with infinite loops; the following will throw an error after invoking 500000 instructions:
 
@@ -43,7 +42,7 @@ The amount of instructions executed can be tweaked via the `quota` option (defau
 
     sandbox.run('while true do end', {quota=10000}) -- throw error after 10000 instructions
 
-### `options.env (default {})`
+##### `options.env`
 
 Use the `env` option to add additional variables to the environment
 
@@ -57,8 +56,7 @@ The sandboxed code can also modify the sandboxed function. Make sure to securize
     assert(env.amount = 2)
 
 
-`result = sandbox.run(f, options, ...)`
----------------------------------------
+#### `result = sandbox.run(f, options, ...)`
 
 `sandbox.run` sanboxes a function and executes it. `f` can be either a string or a function
 
