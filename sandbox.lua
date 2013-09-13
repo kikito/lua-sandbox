@@ -1,10 +1,42 @@
+local sandbox = {
+  _VERSION      = "sandbox 0.5",
+  _DESCRIPTION  = "A pure-lua solution for running untrusted Lua code.",
+  _COPYRIGHT    = "Copyright (c) 2013 Enrique García Cota",
+  _LICENSE      = [[
+    MIT LICENSE
+
+    Permission is hereby granted, free of charge, to any person obtaining a
+    copy of this software and associated documentation files (the
+    "Software"), to deal in the Software without restriction, including
+    without limitation the rights to use, copy, modify, merge, publish,
+    distribute, sublicense, and/or sell copies of the Software, and to
+    permit persons to whom the Software is furnished to do so, subject to
+    the following conditions:
+
+    The above copyright notice and this permission notice shall be included
+    in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+    IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+    CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+    TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+    SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  ]]
+}
+
+-- The base environment is merged with the given env option (or an empty table, if no env provided)
+--
 local BASE_ENV = {}
--- Non-safe :
+
+-- List of non-safe packages/functions:
+--
 -- * string.rep: can be used to allocate millions of bytes in 1 operation
 -- * {set|get}metatable: can be used to modify the metatable of global objects (strings, integers)
 -- * collectgarbage: can affect performance of other systems
 -- * dofile: can access the server filesystem
--- * _G: Unsafe. It can be mocked though
+-- * _G: It has access to everything. It could be mocked though.
 -- * load{file|string}: All unsafe because they can grant acces to global env
 -- * raw{get|set|equal}: Potentially unsafe
 -- * module|require|module: Can modify the host settings
@@ -13,6 +45,8 @@ local BASE_ENV = {}
 -- * math.randomseed: Can affect the host sytem
 -- * io.*, os.*: Most stuff there is non-save
 
+
+-- Safe packages/functions below
 ([[
 
 _VERSION assert error    ipairs   next pairs
@@ -58,6 +92,7 @@ end
   BASE_ENV[module_name] = protect_module(BASE_ENV[module_name], module_name)
 end)
 
+-- auxiliary functions/variables
 
 local string_rep = string.rep
 
@@ -73,7 +108,8 @@ local function cleanup()
   string.rep = string_rep
 end
 
-local function protect(f, options)
+-- Public interface: sandbox.protect
+function sandbox.protect(f, options)
   if type(f) == 'string' then f = assert(loadstring(f)) end
 
   options = options or {}
@@ -101,8 +137,12 @@ local function protect(f, options)
   end
 end
 
-local function run(f, options, ...)
-  return protect(f, options)(...)
+-- Public interface: sandbox.run
+function sandbox.run(f, options, ...)
+  return sandbox.protect(f, options)(...)
 end
 
-return setmetatable({protect = protect, run = run}, {__call = function(_,f,o) return protect(f,o) end})
+-- make sandbox(f) == sandbox.protect(f)
+setmetatable(sandbox, {__call = function(_,f,o) return sandbox.protect(f,o) end})
+
+return sandbox
