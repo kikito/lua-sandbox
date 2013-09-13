@@ -23,7 +23,6 @@ describe('sandbox.run', function()
     it('does not allow access to not-safe stuff', function()
       assert_error(function() sandbox.run('return setmetatable({}, {})') end)
       assert_error(function() sandbox.run('return string.rep("hello", 5)') end)
-      assert_error(function() sandbox.run('return _G.string.upper("hello")') end)
     end)
   end)
 
@@ -88,8 +87,10 @@ describe('sandbox.run', function()
 
 
   describe('when given an env option', function()
-    it('is available on the sandboxed env', function()
-      assert_equal(1, sandbox.run("return foo", {env = {foo = 1}}))
+    it('is available on the sandboxed env as the _G variable', function()
+      local env = {foo = 1}
+      assert_equal(1, sandbox.run("return foo", {env = env}))
+      assert_equal(env, sandbox.run("return _G", {env = env}))
     end)
 
     it('does not hide base env', function()

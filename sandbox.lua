@@ -36,7 +36,7 @@ local BASE_ENV = {}
 -- * {set|get}metatable: can be used to modify the metatable of global objects (strings, integers)
 -- * collectgarbage: can affect performance of other systems
 -- * dofile: can access the server filesystem
--- * _G: It has access to everything. It could be mocked though.
+-- * _G: It has access to everything. It can be mocked to other things though.
 -- * load{file|string}: All unsafe because they can grant acces to global env
 -- * raw{get|set|equal}: Potentially unsafe
 -- * module|require|module: Can modify the host settings
@@ -116,6 +116,7 @@ function sandbox.protect(f, options)
 
   local quota = options.quota or 500000
   local env   = merge(options.env or {}, BASE_ENV)
+  env._G = env._G or env
 
   setfenv(f, env)
 
