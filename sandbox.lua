@@ -104,8 +104,13 @@ local function merge(dest, source)
   return dest
 end
 
+local function sethook(f, key, quota)
+  if type(debug) ~= 'table' or type(debug.sethook) ~= 'function' then return end
+  debug.sethook(f, key, quota)
+end
+
 local function cleanup()
-  debug.sethook()
+  sethook()
   string.rep = string_rep
 end
 
@@ -127,7 +132,7 @@ function sandbox.protect(f, options)
       error('Quota exceeded: ' .. tostring(quota))
     end
 
-    debug.sethook(timeout, "", quota)
+    sethook(timeout, "", quota)
     string.rep = nil
 
     local ok, result = pcall(f, ...)
