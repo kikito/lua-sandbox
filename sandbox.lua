@@ -120,19 +120,26 @@ function sandbox.protect(f, options)
 
   options = options or {}
 
-  local quota = options.quota or 500000
+  local quota = false
+  if options.quota ~= false then
+    quota = options.quota or 500000
+  end
+
   local env   = merge(options.env or {}, BASE_ENV)
   env._G = env._G or env
 
   setfenv(f, env)
 
   return function(...)
-    local timeout = function()
-      cleanup()
-      error('Quota exceeded: ' .. tostring(quota))
+
+    if quota then
+      local timeout = function()
+        cleanup()
+        error('Quota exceeded: ' .. tostring(quota))
+      end
+      sethook(timeout, "", quota)
     end
 
-    sethook(timeout, "", quota)
     string.rep = nil
 
     local ok, result = pcall(f, ...)

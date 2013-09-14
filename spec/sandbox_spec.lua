@@ -83,6 +83,10 @@ describe('sandbox.run', function()
       assert_error(function() sandbox.run("for i=1,100 do end", {quota = 20}) end)
     end)
 
+    it('does not use quotes if the quote param is false', function()
+      assert_not_error(function() sandbox.run("for i=1,1000000 do end", {quota = false}) end)
+    end)
+
   end)
 
 
