@@ -1,6 +1,7 @@
 local sandbox = {
   _VERSION      = "sandbox 0.5",
   _DESCRIPTION  = "A pure-lua solution for running untrusted Lua code.",
+  _URL          = "https://github.com/kikito/sandbox.lua",
   _LICENSE      = [[
     MIT LICENSE
 
