@@ -3,75 +3,120 @@ sandbox.lua
 
 A pure-lua solution for running untrusted Lua code.
 
+The default behavior is restricting access to "dangerous" functions in Lua, such as `os.execute`.
+
+It's possible to provide extra functions via the `options.env` parameter.
+
+Infinite loops are prevented via the `debug` library.
+
 For now, sandbox.lua only works with Lua 5.1.x.
 
 Usage
 =====
 
-    local sandbox = require 'sandbox'
+Require the module like this:
 
-#### `sf = sandbox(f, options)` and `sf = sandbox.protect(f, options)`
+``` lua
 
-Those two are synonyms. They return a sandboxed version of `f`.
+local sandbox = require 'sandbox'
 
-`options` is not required. So far the only possible options are `env` and `quota`
+```
 
-    local sandboxed_f = sandbox(function() return 'hey' end)
-    local msg = sandboxed_f() -- msg is now 'hey'
+### sandbox.protect
 
-Only safe modules and operations can be accessed from a sandboxed function. See the source code for a list of safe/unsafe operations.
+`sandbox.protect(f)` (or `sandbox(f)`) produces a sandboxed version of `f`. `f` can be a Lua function or a string with Lua code.
 
-    local f1 = sandbox.protect(function()
-      return string.upper('string.upper is a safe operation.')
-    end)
+A sandboxed function works as regular functions as long as they don't access any insecure features:
 
-    local f2 = sandbox.protect(function()
-      os.execute('rm -rf /') -- this will throw an error, no damage done
-    end)
+```lua
 
-    f1() -- ok
-    f2() -- error: os.execute not found
+local sandboxed_f = sandbox(function() return 'hey' end)
+local msg = sandboxed_f() -- msg is now 'hey'
 
-##### `options.quota`
+```
+
+Sandboxed options can not access unsafe Lua modules. (See the [source code](https://github.com/kikito/sandbox.lua/blob/master/sandbox.lua#L35) for a list)
+
+When a sandboxed function tries to access an unsafe module, an error is produced.
+
+```lua
+
+local sf = sandbox.protect(function()
+  os.execute('rm -rf /') -- this will throw an error, no damage done
+end)
+
+sf() -- error: os.execute not found
+
+```
+
+Sandboxed functions will eventually throw an error if they contain infinite loops:
+
+```lua
+
+local sf = sandbox.protect(function()
+  while true do end
+end)
+
+sf() -- error: quota exceeded
+
+```
+
+### options.quota
+
+`sandbox.lua` prevents infinite loops from halting the program by hooking the `debug` library to the sandboxed function, and "counting instructions". When
+the instructions reach a certain limit, an error is produced.
+
+This limit can be tweaked via the `quota` option. But default, it is 500000.
 
 It is not possible to exhaust the machine with infinite loops; the following will throw an error after invoking 500000 instructions:
 
-    sandbox.run('while true do end')
+``` lua
+sandbox.run('while true do end') -- raise errors after 500000 instructions
+sandbox.run('while true do end', {quota=10000}) -- raise error after 10000 instructions
+```
 
-The amount of instructions executed can be tweaked via the `quota` option (default value: 500000 instructions)
+Note that if the quota is low enough, sandboxed functions that do lots of calculations might fail:
 
-    sandbox.run('while true do end', {quota=10000}) -- throw error after 10000 instructions
+``` lua
+local f = function()
+  local count = 1
+  for i=1, 400 do count = count + 1 end
+  return count
+end
 
-##### `options.env`
+sandbox.run(f, {quota=100}) -- raises error before the function ends
+```
 
-Use the `env` option to add additional variables to the environment
+### options.env
 
-    local msg = sandbox.run('return foo', {env = {foo = 'This is on the environment'}})
+Use the `env` option to inject additional variables to the environment in which the sandboxed function is executed.
 
-If provided, the `env` variable will be modified by the sanbox (adding base modules like `string`)
-The sandboxed code can also modify the sandboxed function. Make sure to securize it if needed.
+    local msg = sandbox.run('return foo', {env = {foo = 'This is a global var on the the environment'}})
+
+Note that the `env` variable will be modified by the sandbox (adding base modules like `string`). The sandboxed code can also modify it. It is
+recommended to discard it after use.
 
     local env = {amount = 1}
     sandbox.run('amount = amount + 1', {env = env})
     assert(env.amount = 2)
 
 
-#### `result = sandbox.run(f, options, ...)`
+### sandbox.run
 
-`sandbox.run` sanboxes a function and executes it. `f` can be either a string or a function
+`sandbox.run(f)` sanboxes and executes `f` in a single line. `f` can be either a string or a function
 
-    local msg  = sandbox.run(function() return 'this is untrusted code' end)
-    local msg2 = sandbox.run("return 'this is also untrusted code'")
+You can pass `options` param, and it will work like in `sandbox.protect`.
+Any extra parameters will just be passed to the sandboxed function when executed.
 
-`sandbox.run(f, o, ...)` is equivalent to `sandbox.protect(f,o)(...)`.
-
-`options` works exactly like in `sandbox.protect`.
-
-`sandbox.run` also returns the result of executing `f` with the given params after `options`, if any (notice that strings can't accept parameters).
+In other words, `sandbox.run(f, o, ...)` is equivalent to `sandbox.protect(f,o)(...)`.
 
 Notice that if `f` throws an error, it is *NOT* captured by `sandbox.run`. Use `pcall` if you want your app to be immune to errors, like this:
 
+``` lua
+
     local ok, result = pcall(sandbox.run, 'error("this just throws an error")')
+
+```
 
 
 Installation
