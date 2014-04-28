@@ -17,9 +17,7 @@ Usage
 Require the module like this:
 
 ``` lua
-
 local sandbox = require 'sandbox'
-
 ```
 
 ### sandbox.protect
@@ -29,10 +27,8 @@ local sandbox = require 'sandbox'
 A sandboxed function works as regular functions as long as they don't access any insecure features:
 
 ```lua
-
 local sandboxed_f = sandbox(function() return 'hey' end)
 local msg = sandboxed_f() -- msg is now 'hey'
-
 ```
 
 Sandboxed options can not access unsafe Lua modules. (See the [source code](https://github.com/kikito/sandbox.lua/blob/master/sandbox.lua#L35) for a list)
@@ -40,25 +36,21 @@ Sandboxed options can not access unsafe Lua modules. (See the [source code](http
 When a sandboxed function tries to access an unsafe module, an error is produced.
 
 ```lua
-
 local sf = sandbox.protect(function()
   os.execute('rm -rf /') -- this will throw an error, no damage done
 end)
 
 sf() -- error: os.execute not found
-
 ```
 
 Sandboxed functions will eventually throw an error if they contain infinite loops:
 
 ```lua
-
 local sf = sandbox.protect(function()
   while true do end
 end)
 
 sf() -- error: quota exceeded
-
 ```
 
 ### options.quota
@@ -113,9 +105,7 @@ In other words, `sandbox.run(f, o, ...)` is equivalent to `sandbox.protect(f,o)(
 Notice that if `f` throws an error, it is *NOT* captured by `sandbox.run`. Use `pcall` if you want your app to be immune to errors, like this:
 
 ``` lua
-
-    local ok, result = pcall(sandbox.run, 'error("this just throws an error")')
-
+local ok, result = pcall(sandbox.run, 'error("this just throws an error")')
 ```
 
 
@@ -134,7 +124,9 @@ Specs
 
 This project uses [telescope](https://github.com/norman/telescope) for its specs. In order to run them, install it and then:
 
-    cd /path/to/where/the/spec/folder/is
-    tsc spec/*
+```
+cd /path/to/where/the/spec/folder/is
+tsc spec/*
+```
 
 I would love to use [busted](http://olivinelabs.com/busted/), but it has some incompatibility with `debug.sethook(f, "", quota)` and the tests just hanged up.
