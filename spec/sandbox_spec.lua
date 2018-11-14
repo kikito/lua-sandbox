@@ -1,5 +1,9 @@
 local sandbox = require 'sandbox'
 
+local assert_equal = assert.are.same
+local assert_error = assert.error
+local assert_not_error = function(...) assert(pcall(...)) end
+
 describe('sandbox.run', function()
 
   describe('when handling base cases', function()
