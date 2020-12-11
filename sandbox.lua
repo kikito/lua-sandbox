@@ -28,6 +28,27 @@ local sandbox = {
   ]]
 }
 
+-- Lua 5.2, 5.3 and above
+-- https://leafo.net/guides/setfenv-in-lua52-and-above.html#setfenv-implementation
+local setfenv = setfenv or function(fn, env)
+  local i = 1
+  while true do
+    local name = debug.getupvalue(fn, i)
+    if name == "_ENV" then
+      debug.upvaluejoin(fn, i, (function()
+        return env
+      end), 1)
+      break
+    elseif not name then
+      break
+    end
+
+    i = i + 1
+  end
+
+  return fn
+end
+
 -- The base environment is merged with the given env option (or an empty table, if no env provided)
 --
 local BASE_ENV = {}

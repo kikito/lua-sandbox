@@ -9,8 +9,6 @@ It's possible to provide extra functions via the `options.env` parameter.
 
 Infinite loops are prevented via the `debug` library.
 
-For now, sandbox.lua only works with Lua 5.1.x.
-
 Usage
 =====
 
