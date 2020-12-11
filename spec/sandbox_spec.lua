@@ -13,6 +13,16 @@ describe('sandbox.run', function()
       assert.equal(r, 'hello')
     end)
 
+    it('can run bytecode strings by default', function()
+      local fn = function() end
+      assert.has_no.error(function() sandbox.run(string.dump(fn)) end)
+    end)
+
+    it('can\'t run bytecode strings if given a \'t\' mode option', function()
+      local fn = function() end
+      assert.error(function() sandbox.run(string.dump(fn), { mode = 't' }) end)
+    end)
+
     it('has access to safe methods', function()
       assert.equal(10,      sandbox.run("return tonumber('10')"))
       assert.equal('HELLO', sandbox.run("return string.upper('hello')"))
