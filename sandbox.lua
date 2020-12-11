@@ -138,8 +138,6 @@ end
 
 -- Public interface: sandbox.protect
 function sandbox.protect(f, options)
-  if type(f) == 'string' then f = assert(loadstring(f)) end
-
   options = options or {}
 
   local quota = false
@@ -150,7 +148,11 @@ function sandbox.protect(f, options)
   local env   = merge(options.env or {}, BASE_ENV)
   env._G = env._G or env
 
-  setfenv(f, env)
+  if type(f) == 'string' then
+    f = assert(load(f, nil, options.mode, env))
+  else
+    setfenv(f, env)
+  end
 
   return function(...)
 
