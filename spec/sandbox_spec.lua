@@ -34,6 +34,11 @@ describe('sandbox.run', function()
       assert.error(function() sandbox.run('return setmetatable({}, {})') end)
       assert.error(function() sandbox.run('return string.rep("hello", 5)') end)
     end)
+
+    it('does return multiple values', function()
+      local result = { sandbox.run("return 'hello', 'world'") }
+      assert.same({ 'hello', 'world' }, result)
+    end)
   end)
 
   describe('when handling string.rep', function()

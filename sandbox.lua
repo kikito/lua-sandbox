@@ -166,12 +166,13 @@ function sandbox.protect(f, options)
 
     string.rep = nil
 
-    local ok, result = pcall(f, ...)
+    local t = table.pack(pcall(f, ...))
 
     cleanup()
 
-    if not ok then error(result) end
-    return result
+    if not t[1] then error(t[2]) end
+
+    return table.unpack(t, 2, t.n)
   end
 end
 
