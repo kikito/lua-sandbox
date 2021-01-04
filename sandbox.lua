@@ -5,7 +5,7 @@ local sandbox = {
   _LICENSE      = [[
     MIT LICENSE
 
-    Copyright (c) 2013 Enrique García Cota
+    Copyright (c) 2021 Enrique García Cota
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the
@@ -41,7 +41,7 @@ sandbox.bytecode_blocked = bytecode_blocked
 --
 local BASE_ENV = {}
 
--- List of non-safe packages/functions:
+-- List of unsafe packages/functions:
 --
 -- * string.rep: can be used to allocate millions of bytes in 1 operation
 -- * {set|get}metatable: can be used to modify the metatable of global objects (strings, integers)
@@ -52,9 +52,8 @@ local BASE_ENV = {}
 -- * raw{get|set|equal}: Potentially unsafe
 -- * module|require|module: Can modify the host settings
 -- * string.dump: Can display confidential server info (implementation of functions)
--- * string.rep: Can allocate millions of bytes in one go
 -- * math.randomseed: Can affect the host sytem
--- * io.*, os.*: Most stuff there is non-save
+-- * io.*, os.*: Most stuff there is unsafe, see below for exceptions
 
 
 -- Safe packages/functions below
@@ -121,7 +120,7 @@ end
 
 local function cleanup()
   sethook()
-  string.rep = string_rep
+  string.rep = string_rep -- luacheck: no global
 end
 
 -- Public interface: sandbox.protect
@@ -160,7 +159,7 @@ function sandbox.protect(code, options)
       sethook(timeout, "", quota)
     end
 
-    string.rep = nil
+    string.rep = nil -- luacheck: no global
 
     local t = table.pack(pcall(f, ...))
 
