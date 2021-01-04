@@ -28,26 +28,10 @@ local sandbox = {
   ]]
 }
 
--- Lua 5.2, 5.3 and above
--- https://leafo.net/guides/setfenv-in-lua52-and-above.html#setfenv-implementation
-local setfenv = setfenv or function(fn, env)
-  local i = 1
-  while true do
-    local name = debug.getupvalue(fn, i)
-    if name == "_ENV" then
-      debug.upvaluejoin(fn, i, (function()
-        return env
-      end), 1)
-      break
-    elseif not name then
-      break
-    end
 
-    i = i + 1
-  end
-
-  return fn
-end
+-- PUC-Rio Lua 5.1 does not support deactivation of binary code
+local mode_supported = _ENV or type(_G.jit) == "table"
+sandbox.mode_supported = mode_supported
 
 -- The base environment is merged with the given env option (or an empty table, if no env provided)
 --
@@ -137,7 +121,7 @@ local function cleanup()
 end
 
 -- Public interface: sandbox.protect
-function sandbox.protect(f, options)
+function sandbox.protect(code, options)
   options = options or {}
 
   local quota = false
@@ -148,9 +132,17 @@ function sandbox.protect(f, options)
   local env   = merge(options.env or {}, BASE_ENV)
   env._G = env._G or env
 
-  if type(f) == 'string' then
-    f = assert(load(f, nil, options.mode, env))
+  assert(type(code) == 'string', "expected a string")
+
+
+  local f
+  if mode_supported then
+    f = assert(load(code, nil, options.mode, env))
   else
+    if options.mode then
+      error("options.mode is not supported on this environment (usually PUC-Rio Lua 5.1). Please unset options.mode")
+    end
+    f = assert(loadstring(code))
     setfenv(f, env)
   end
 
@@ -177,11 +169,11 @@ function sandbox.protect(f, options)
 end
 
 -- Public interface: sandbox.run
-function sandbox.run(f, options, ...)
-  return sandbox.protect(f, options)(...)
+function sandbox.run(code, options, ...)
+  return sandbox.protect(code, options)(...)
 end
 
 -- make sandbox(f) == sandbox.protect(f)
-setmetatable(sandbox, {__call = function(_,f,o) return sandbox.protect(f,o) end})
+setmetatable(sandbox, {__call = function(_,code,o) return sandbox.protect(code,o) end})
 
 return sandbox
