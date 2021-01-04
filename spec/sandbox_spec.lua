@@ -84,27 +84,31 @@ describe('sandbox.run', function()
   end)
 
 
-  describe('when given infinite loops', function()
+  if sandbox.quota_supported then
+    describe('when given infinite loops', function()
+      it('throws an error with infinite loops', function()
+        assert.error(function() sandbox.run("while true do end") end)
+      end)
 
-    it('throws an error with infinite loops', function()
-      assert.error(function() sandbox.run("while true do end") end)
+      it('restores string.rep even after a while true', function()
+        assert.error(function() sandbox.run("while true do end") end)
+        assert.equal('hellohello', string.rep('hello', 2))
+      end)
+
+      it('accepts a quota param', function()
+        assert.has_no.errors(function() sandbox.run("for i=1,100 do end") end)
+        assert.error(function() sandbox.run("for i=1,100 do end", {quota = 20}) end)
+      end)
+
+      it('does not use quotes if the quote param is false', function()
+        assert.has_no.errors(function() sandbox.run("for i=1,1000000 do end", {quota = false}) end)
+      end)
     end)
-
-    it('restores string.rep even after a while true', function()
-      assert.error(function() sandbox.run("while true do end") end)
-      assert.equal('hellohello', string.rep('hello', 2))
+  else
+    it('throws an error when trying to use the quota option in an unsupported environment (LuaJIT)', function()
+      assert.error(function() sandbox.run("", {quota = 20}) end)
     end)
-
-    it('accepts a quota param', function()
-      assert.has_no.errors(function() sandbox.run("for i=1,100 do end") end)
-      assert.error(function() sandbox.run("for i=1,100 do end", {quota = 20}) end)
-    end)
-
-    it('does not use quotes if the quote param is false', function()
-      assert.has_no.errors(function() sandbox.run("for i=1,1000000 do end", {quota = false}) end)
-    end)
-
-  end)
+  end
 
 
   describe('when given an env option', function()

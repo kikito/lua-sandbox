@@ -25,9 +25,13 @@ local sandbox = {
     CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
     TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
     SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-  ]]
+  ]],
+
 }
 
+-- quotas don't work in LuaJIT since debug.sethook works differently there
+local quota_supported = type(_G.jit) == "nil"
+sandbox.quota_supported = quota_supported
 
 -- PUC-Rio Lua 5.1 does not support deactivation of binary code
 local mode_supported = _ENV or type(_G.jit) == "table"
@@ -125,6 +129,9 @@ function sandbox.protect(code, options)
   options = options or {}
 
   local quota = false
+  if options.quota and not quota_supported then
+    error("options.quota is not supported on this environment (usually LuaJIT). Please unset options.quota")
+  end
   if options.quota ~= false then
     quota = options.quota or 500000
   end
@@ -148,7 +155,7 @@ function sandbox.protect(code, options)
 
   return function(...)
 
-    if quota then
+    if quota and quota_supported then
       local timeout = function()
         cleanup()
         error('Quota exceeded: ' .. tostring(quota))
