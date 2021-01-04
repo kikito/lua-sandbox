@@ -3,10 +3,6 @@ local sandbox = require 'sandbox'
 describe('sandbox.run', function()
 
   describe('when handling base cases', function()
-    it('can run harmless functions', function()
-      local r = sandbox.run(function() return 'hello' end)
-      assert.equal(r, 'hello')
-    end)
 
     it('can run harmless strings', function()
       local r = sandbox.run("return 'hello'")
@@ -18,10 +14,16 @@ describe('sandbox.run', function()
       assert.has_no.error(function() sandbox.run(string.dump(fn)) end)
     end)
 
-    it('can\'t run bytecode strings if given a \'t\' mode option', function()
-      local fn = function() end
-      assert.error(function() sandbox.run(string.dump(fn), { mode = 't' }) end)
-    end)
+    if sandbox.mode_supported then
+      it('can\'t run bytecode strings if given a \'t\' mode option', function()
+        local fn = function() end
+        assert.error(function() sandbox.run(string.dump(fn), { mode = 't' }) end)
+      end)
+    else
+      it('throws an error if the mode option is used', function()
+        assert.error(function() sandbox.run("", { mode = 't' }) end)
+      end)
+    end
 
     it('has access to safe methods', function()
       assert.equal(10,      sandbox.run("return tonumber('10')"))
@@ -56,13 +58,13 @@ describe('sandbox.run', function()
       assert.equal('hellohello', string.rep('hello', 2))
     end)
 
-    it('passes parameters to the function', function()
-      assert.equal(sandbox.run(function(a,b) return a + b end, {}, 1,2), 3)
+    it('passes parameters to the code', function()
+      assert.equal(sandbox.run("local a, b = ...; return a + b", {}, 1,2), 3)
     end)
   end)
 
 
-  describe('when the sandboxed function tries to modify the base environment', function()
+  describe('when the sandboxed code tries to modify the base environment', function()
 
     it('does not allow modifying the modules', function()
       assert.error(function() sandbox.run("string.foo = 1") end)
