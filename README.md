@@ -65,7 +65,7 @@ sandbox.run('while true do end') -- raise errors after 500000 instructions
 sandbox.run('while true do end', {quota=10000}) -- raise error after 10000 instructions
 ```
 
-Note that if the quota is low enough, sandboxed functions that do lots of calculations might fail:
+If the quota is low enough, sandboxed functions that do lots of calculations might fail:
 
 ``` lua
 local f = function()
@@ -76,6 +76,8 @@ end
 
 sandbox.run(f, {quota=100}) -- raises error before the function ends
 ```
+
+Note: This feature is not available in LuaJIT
 
 ### options.env
 
