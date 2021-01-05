@@ -72,10 +72,10 @@ describe('sandbox.run', function()
       assert.error(function() sandbox.run("error('this should be raised')") end)
     end)
 
-    it('DOES persist modification to base functions when they are provided by the base env', function()
+    it('does not persist modification to base functions even when they are provided by the base env', function()
       local env = {['next'] = 'hello'}
-      sandbox.run('next = "bye"', {env=env})
-      assert.equal(env['next'], 'bye')
+      sandbox.run('next = "bye"', { env=env })
+      assert.equal(env['next'], 'hello')
     end)
   end)
 
@@ -111,17 +111,29 @@ describe('sandbox.run', function()
     it('is available on the sandboxed env as the _G variable', function()
       local env = {foo = 1}
       assert.equal(1, sandbox.run("return foo", {env = env}))
-      assert.equal(env, sandbox.run("return _G", {env = env}))
+      assert.equal(1, sandbox.run("return _G.foo", {env = env}))
     end)
 
     it('does not hide base env', function()
       assert.equal('HELLO', sandbox.run("return string.upper(foo)", {env = {foo = 'hello'}}))
     end)
 
-    it('can modify the env', function()
+    it('cannot modify the env', function()
       local env = {foo = 1}
       sandbox.run("foo = 2", {env = env})
-      assert.equal(env.foo, 2)
+      assert.equal(env.foo, 1)
+    end)
+
+    it('uses the env metatable, if it exists', function()
+      local env1 = { foo = 1 }
+      local env2 = { bar = 2 }
+      setmetatable(env2, { __index = env1 })
+      assert.equal(3, sandbox.run("return foo + bar", { env = env2 }))
+    end)
+
+    it('can override the base env', function()
+      local env = { tostring = function(x) return "hello " .. x end }
+      assert.equal("hello peter", sandbox.run("return tostring('peter')", { env = env }))
     end)
   end)
 

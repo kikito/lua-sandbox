@@ -106,13 +106,6 @@ end)
 
 local string_rep = string.rep
 
-local function merge(dest, source)
-  for k,v in pairs(source) do
-    dest[k] = dest[k] or v
-  end
-  return dest
-end
-
 local function sethook(f, key, quota)
   if type(debug) ~= 'table' or type(debug.sethook) ~= 'function' then return end
   debug.sethook(f, key, quota)
@@ -135,11 +128,16 @@ function sandbox.protect(code, options)
     quota = options.quota or 500000
   end
 
-  local env   = merge(options.env or {}, BASE_ENV)
-  env._G = env._G or env
-
   assert(type(code) == 'string', "expected a string")
 
+  local passed_env = options.env or {}
+  local env = {}
+  for k, v in pairs(BASE_ENV) do
+    local pv = passed_env[k]
+    env[k] = pv ~= nil and pv or v
+  end
+  setmetatable(env, { __index = options.env })
+  env._G = env
 
   local f
   if bytecode_blocked then
