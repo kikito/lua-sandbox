@@ -33,9 +33,9 @@ local sandbox = {
 local quota_supported = type(_G.jit) == "nil"
 sandbox.quota_supported = quota_supported
 
--- PUC-Rio Lua 5.1 does not support deactivation of binary code
-local mode_supported = _ENV or type(_G.jit) == "table"
-sandbox.mode_supported = mode_supported
+-- PUC-Rio Lua 5.1 does not support deactivation of bytecode
+local bytecode_blocked = _ENV or type(_G.jit) == "table"
+sandbox.bytecode_blocked = bytecode_blocked
 
 -- The base environment is merged with the given env option (or an empty table, if no env provided)
 --
@@ -143,12 +143,9 @@ function sandbox.protect(code, options)
 
 
   local f
-  if mode_supported then
-    f = assert(load(code, nil, options.mode, env))
+  if bytecode_blocked then
+    f = assert(load(code, nil, 't', env))
   else
-    if options.mode then
-      error("options.mode is not supported on this environment (usually PUC-Rio Lua 5.1). Please unset options.mode")
-    end
     f = assert(loadstring(code))
     setfenv(f, env)
   end

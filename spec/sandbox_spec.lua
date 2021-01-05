@@ -9,19 +9,15 @@ describe('sandbox.run', function()
       assert.equal(r, 'hello')
     end)
 
-    it('can run bytecode strings by default', function()
-      local fn = function() end
-      assert.has_no.error(function() sandbox.run(string.dump(fn)) end)
-    end)
-
-    if sandbox.mode_supported then
-      it('can\'t run bytecode strings if given a \'t\' mode option', function()
+    if sandbox.bytecode_blocked then
+      it('rejects bytecode', function()
         local fn = function() end
-        assert.error(function() sandbox.run(string.dump(fn), { mode = 't' }) end)
+        assert.error(function() sandbox.run(string.dump(fn)) end)
       end)
     else
-      it('throws an error if the mode option is used', function()
-        assert.error(function() sandbox.run("", { mode = 't' }) end)
+      it('accepts bytecode (PUC Rio 5.1)', function()
+        local fn = function() end
+        assert.has.no.error(function() sandbox.run(string.dump(fn)) end)
       end)
     end
 

@@ -9,6 +9,16 @@ It's possible to provide extra functions via the `options.env` parameter.
 
 Infinite loops are prevented via the `debug` library.
 
+Supported Lua versions:
+======================
+
+All the features of sandbox.lua work in the following Lua environments:
+
+
+* PUC-Rio Lua 5.1 **allows execution of bytecode**, which is a huge limitation (see the bytecode section below)
+* PUC-Rio Lua 5.2, 5.3, 5.4 have total support.
+* LuaJIT is not protected against infinite loops (see the notes in `options.quota` below)
+
 Usage
 =====
 
@@ -50,6 +60,29 @@ local sf = sandbox.protect([[
 
 sf() -- error: quota exceeded
 ```
+
+### Bytecode
+
+It is possible to exit a sandbox using Lua bytecode. References:
+
+* http://apocrypha.numin.it/talks/lua_bytecode_exploitation.pdf
+* https://github.com/erezto/lua-sandbox-escape
+* https://gist.github.com/corsix/6575486
+
+Because of this, the sandbox deactivates bytecode in all the versions of Lua where it is possible:
+
+* PUC-Rio Lua 5.2, 5.3, 5.4
+* LuaJIT
+
+In other words, _all except PUC-Rio Lua 5.1_.
+
+** The sandbox can be exploited in PUC-Rio Lua 5.1 via bytecode **
+
+The only reason we keep Lua 5.1 in the list of supported versions of Lua is because
+sandboxing can help against users attempting to delete a file by mistake. _It does not provide
+protection against malicious users_.
+
+As a result we _strongly recommend updating to a more recent version when possible_.
 
 ### options.quota
 
@@ -95,7 +128,7 @@ recommended to discard it after use.
 
 ### sandbox.run
 
-`sandbox.run(code)` sanboxes and executes `code` in a single line. `code` must be a string with Lua code inside.
+`sandbox.run(code)` sandboxes and executes `code` in a single line. `code` must be a string with Lua code inside.
 
 You can pass `options` param, and it will work like in `sandbox.protect`.
 
