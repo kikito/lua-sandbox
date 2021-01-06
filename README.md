@@ -28,10 +28,31 @@ Require the module like this:
 local sandbox = require 'sandbox'
 ```
 
-### sandbox.protect
+Then you can use `sandbox.run` and `sandbox.protect`
 
-`sandbox.protect("lua code")` (or `sandbox("lua code")`) produces a sandboxed function. The resulting sandboxed
-function works as regular functions as long as they don't access any insecure features:
+### sandbox.run(code, options, ...)
+
+`sandbox.run(code, options, ...)` sandboxes and executes `code` with the given `options` and extra params.
+
+`code` must be a string with Lua code inside.
+
+`options` is described below.
+
+Any extra parameters will just be passed to the sandboxed function when executed, and available on the top-level scope via the `...` varargs parameters.
+
+In other words, `sandbox.run(c, o, ...)` is equivalent to `sandbox.protect(c, o)(...)`.
+
+Notice that if `code` throws an error, it is *NOT* captured by `sandbox.run`. Use `pcall` if you want your app to be immune to errors, like this:
+
+``` lua
+local ok, result = pcall(sandbox.run, 'error("this just throws an error")')
+```
+
+### sandbox.protect(code, options)
+
+`sandbox.protect("lua code")` (or `sandbox("lua code")`) produces a sandboxed function, without executing it.
+
+The resulting sandboxed function works as regular functions as long as they don't access any insecure features:
 
 ```lua
 local sandboxed_f = sandbox(function() return 'hey' end)
@@ -51,7 +72,7 @@ end
 sf() -- error: os.execute not found
 ```
 
-Sandboxed functions will eventually throw an error if they contain infinite loops:
+Sandboxed code will eventually throw an error if it contains infinite loops (note: this feature is not available in LuaJIT):
 
 ```lua
 local sf = sandbox.protect([[
@@ -63,7 +84,7 @@ sf() -- error: quota exceeded
 
 ### Bytecode
 
-It is possible to exit a sandbox using Lua bytecode. References:
+It is possible to exit a sandbox using specially-crafted Lua bytecode. References:
 
 * http://apocrypha.numin.it/talks/lua_bytecode_exploitation.pdf
 * https://github.com/erezto/lua-sandbox-escape
@@ -86,6 +107,8 @@ As a result we _strongly recommend updating to a more recent version when possib
 
 ### options.quota
 
+Note: This feature is not available in LuaJIT
+
 `sandbox.lua` prevents infinite loops from halting the program by hooking the `debug` library to the sandboxed function, and "counting instructions". When
 the instructions reach a certain limit, an error is produced.
 
@@ -98,49 +121,42 @@ sandbox.run('while true do end') -- raise errors after 500000 instructions
 sandbox.run('while true do end', {quota=10000}) -- raise error after 10000 instructions
 ```
 
-If the quota is low enough, sandboxed functions that do lots of calculations might fail:
+If the quota is low enough, sandboxed code with too many calculations might fail:
 
 ``` lua
-local f = function()
+local code = [[
   local count = 1
   for i=1, 400 do count = count + 1 end
   return count
-end
+]]
 
-sandbox.run(f, {quota=100}) -- raises error before the function ends
+sandbox.run(code, {quota=100}) -- raises error before the code ends
 ```
 
-Note: This feature is not available in LuaJIT
+If you want to turn off the quota completely, pass `quota=false` instead.
+
 
 ### options.env
 
-Use the `env` option to inject additional variables to the environment in which the sandboxed function is executed.
+Use the `env` option to inject additional variables to the environment in which the sandboxed code is executed.
 
     local msg = sandbox.run('return foo', {env = {foo = 'This is a global var on the the environment'}})
 
-Note that the `env` variable will be modified by the sandbox (adding base modules like `string`). The sandboxed code can also modify it. It is
-recommended to discard it after use.
+The `env` variable will be used as an "index" by the sandbox environment, but it will *not* be modified at all (changes
+to the environment are thus lost). The only way to "get information out" from the sandboxed environments are:
 
-    local env = {amount = 1}
-    sandbox.run('amount = amount + 1', {env = env})
-    assert(env.amount = 2)
+Through side effects, like writing to a database. You will have to provide the side-effects functions in `env`:
 
+    local val = 1
+    local env = { write_db = function(new_val) val = new_val end }
+    sandbox.run('write_db(2)')
+    assert(val = 2)
 
-### sandbox.run
+Through returned values:
 
-`sandbox.run(code)` sandboxes and executes `code` in a single line. `code` must be a string with Lua code inside.
-
-You can pass `options` param, and it will work like in `sandbox.protect`.
-
-Any extra parameters will just be passed to the sandboxed function when executed, and available on the top-level scope via the `...` varargs parameters.
-
-In other words, `sandbox.run(c, o, ...)` is equivalent to `sandbox.protect(c, o)(...)`.
-
-Notice that if `code` throws an error, it is *NOT* captured by `sandbox.run`. Use `pcall` if you want your app to be immune to errors, like this:
-
-``` lua
-local ok, result = pcall(sandbox.run, 'error("this just throws an error")')
-```
+    local env = { amount = 1 }
+    local result = sandbox.run('return amount + 1', { env = env })
+    assert(result = 2)
 
 
 Installation
