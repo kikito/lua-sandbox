@@ -134,7 +134,11 @@ function sandbox.protect(code, options)
   local env = {}
   for k, v in pairs(BASE_ENV) do
     local pv = passed_env[k]
-    env[k] = pv ~= nil and pv or v
+    if pv ~= nil then
+      env[k] = pv
+    else
+      env[k] = v
+    end
   end
   setmetatable(env, { __index = options.env })
   env._G = env
