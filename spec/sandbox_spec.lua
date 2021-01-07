@@ -135,6 +135,11 @@ describe('sandbox.run', function()
       local env = { tostring = function(x) return "hello " .. x end }
       assert.equal("hello peter", sandbox.run("return tostring('peter')", { env = env }))
     end)
+
+    it('can override the base env with false', function()
+      local env = { tostring = false }
+      assert.equal(false, sandbox.run("return tostring", { env = env }))
+    end)
   end)
 
 end)
