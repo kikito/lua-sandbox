@@ -164,6 +164,10 @@ Installation
 
 Just copy sandbox.lua wherever you need it.
 
+Alternatively, you can use luarocks:
+
+    luarocks install kikito/sandbox
+
 License
 =======
 
