@@ -1,11 +1,11 @@
 local sandbox = {
-  _VERSION      = "sandbox 0.5",
+  _VERSION      = "kong-lua-sandbox 1.0",
   _DESCRIPTION  = "A pure-lua solution for running untrusted Lua code.",
-  _URL          = "https://github.com/kikito/sandbox.lua",
+  _URL          = "https://github.com/kong/kong-lua-sandbox",
   _LICENSE      = [[
     MIT LICENSE
 
-    Copyright (c) 2021 Enrique García Cota
+    Copyright (c) 2021 Kong Inc
 
     Permission is hereby granted, free of charge, to any person obtaining a
     copy of this software and associated documentation files (the

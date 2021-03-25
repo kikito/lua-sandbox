@@ -1,6 +1,6 @@
-local sandbox = require 'sandbox'
+local sandbox = require 'kong-lua-sandbox'
 
-describe('sandbox.run', function()
+describe('kong-lua-sandbox.run', function()
 
   describe('when handling base cases', function()
 
