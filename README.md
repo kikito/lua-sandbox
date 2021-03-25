@@ -1,4 +1,4 @@
-sandbox.lua
+kong-lua-sandbox
 ===========
 
 A pure-lua solution for running untrusted Lua code.
@@ -12,7 +12,7 @@ Infinite loops are prevented via the `debug` library.
 Supported Lua versions:
 ======================
 
-All the features of sandbox.lua work in the following Lua environments:
+All the features of kong-lua-sandbox work in the following Lua environments:
 
 
 * PUC-Rio Lua 5.1 **allows execution of bytecode**, which is a huge limitation (see the bytecode section below)
@@ -25,7 +25,7 @@ Usage
 Require the module like this:
 
 ``` lua
-local sandbox = require 'sandbox'
+local sandbox = require 'kong-lua-sandbox'
 ```
 
 Then you can use `sandbox.run` and `sandbox.protect`
@@ -59,7 +59,7 @@ local sandboxed_f = sandbox(function() return 'hey' end)
 local msg = sandboxed_f() -- msg is now 'hey'
 ```
 
-Sandboxed options can not access unsafe Lua modules. (See the [source code](https://github.com/kikito/sandbox.lua/blob/master/sandbox.lua#L35) for a list)
+Sandboxed options can not access unsafe Lua modules. (See the [source code](https://github.com/kong/kong-lua-sandbox/blob/master/kong-lua-sandbox.lua#L35) for a list)
 
 When a sandboxed function tries to access an unsafe module, an error is produced.
 
@@ -109,7 +109,7 @@ As a result we _strongly recommend updating to a more recent version when possib
 
 Note: This feature is not available in LuaJIT
 
-`sandbox.lua` prevents infinite loops from halting the program by hooking the `debug` library to the sandboxed function, and "counting instructions". When
+`kong-lua-sandbox` prevents infinite loops from halting the program by hooking the `debug` library to the sandboxed function, and "counting instructions". When
 the instructions reach a certain limit, an error is produced.
 
 This limit can be tweaked via the `quota` option. But default, it is 500000.
@@ -162,11 +162,17 @@ Through returned values:
 Installation
 ============
 
-Just copy sandbox.lua wherever you need it.
+With luarocks:
 
-Alternatively, you can use luarocks:
+    luarocks install kong-lua-sandbox
 
-    luarocks install kikito/sandbox
+Or add it to your own rockspec as a dependency:
+
+```
+dependencies = {
+   "kong-lua-sandbox >= 1.0",
+}
+```
 
 License
 =======
