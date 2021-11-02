@@ -1,9 +1,9 @@
 package = "sandbox"
 
-version = "1.0.1-0"
+version = "1.0.1-1"
 
 source = {
-   url = "git://github.com/kikito/sandbox.lua.git",
+   url = "https://github.com/kikito/sandbox.lua.git",
    tag = "v1.0.1"
 }
 
