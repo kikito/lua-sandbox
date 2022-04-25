@@ -153,19 +153,33 @@ function sandbox.protect(code, options)
 
   return function(...)
 
+	local queryInvoker = function(...) local tmp =  table.pack(pcall(f, ...)); cleanup(); return tmp end;
+	
     if quota and quota_supported then
       local timeout = function()
-        cleanup()
-        error('Quota exceeded: ' .. tostring(quota))
+		if(type(debug) == 'table' and type(debug.sethook) == 'function') then 
+			-- If the function were to be using pcall, it may capture the error accidentally or intentionally. 
+			-- This allows us to repeatedly invoke the hook on every instruction and only stop if the function 
+			-- which is currently getting executed is our invoker.
+			-- This will NOT work properly if for whatever reason the sandbox got access to the sandbox.protect
+			-- as the function sets a new hook and never sets it back to the last one. 
+			sethook( function() 	
+					local fn = debug.getinfo(2 , 'f').func;
+					if( fn ~= queryInvoker and fn ~= cleanup and not (fn == table.pack and debug.getinfo(3 , 'f').func == queryInvoker) ) then
+						error('Quota exceeded: ' .. tostring(quota)) 
+					else
+						cleanup();
+					end  
+				end, "", 1)
+		end
+        error('Quota exceeded: ' .. tostring(quota));
       end
       sethook(timeout, "", quota)
     end
 
     string.rep = nil -- luacheck: no global
 
-    local t = table.pack(pcall(f, ...))
-
-    cleanup()
+    local t = queryInvoker(...);
 
     if not t[1] then error(t[2]) end
 
