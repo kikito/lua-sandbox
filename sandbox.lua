@@ -29,9 +29,19 @@ local sandbox = {
 
 }
 
--- quotas don't work in LuaJIT since debug.sethook works differently there
-local quota_supported = type(_G.jit) == "nil"
-sandbox.quota_supported = quota_supported
+-- test if quotas are supported by current Lua(JIT) version
+sandbox.quota_supported = (function()
+  local quota_supported = false
+  local chunk = (load or loadstring)("local i = 0; while i < 1000 do i = i + 1 end")
+  debug.sethook(function()
+    debug.sethook()
+    quota_supported = true 
+  end, "", 100)
+  pcall(chunk)
+  debug.sethook()
+  return quota_supported
+end)()
+
 
 -- PUC-Rio Lua 5.1 does not support deactivation of bytecode
 local bytecode_blocked = _ENV or type(_G.jit) == "table"
