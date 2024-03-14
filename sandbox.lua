@@ -161,7 +161,9 @@ function sandbox.protect(code, options)
       sethook(timeout, "", quota)
     end
 
-    string.rep = nil -- luacheck: no global
+    if not options.allow_string_rep then
+      string.rep = nil -- luacheck: no global
+    end
 
     local t = table.pack(pcall(f, ...))
 
@@ -170,7 +172,7 @@ function sandbox.protect(code, options)
     if not t[1] then error(t[2]) end
 
     return table.unpack(t, 2, t.n)
-  end
+  end, env
 end
 
 -- Public interface: sandbox.run
