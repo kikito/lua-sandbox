@@ -172,7 +172,7 @@ function sandbox.protect(code, options)
     if not t[1] then error(t[2]) end
 
     return table.unpack(t, 2, t.n)
-  end
+  end, env
 end
 
 -- Public interface: sandbox.run
